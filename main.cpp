@@ -4,12 +4,18 @@
 
 #include "opl2.h"
 
+#define UART_RX     (1 << PD0)
+#define UART_TX     (1 << PD1)
+#define UART_DDR    DDRD
+#define UART_BAUD   115200
+#define UART_UBRR   (uint16_t)((F_CPU / (16.0 * UART_BAUD)) - 0.5)
+
 static void uart_init() {
-    DDRD  &= ~(1 << PD0);
-    DDRD  |=  (1 << PD1);
-    UBRR0  = 10;
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+    UART_DDR |= UART_TX;
+    UART_DDR &= ~UART_RX;
+    UBRR0     = UART_UBRR;
+    UCSR0B    = (1 << RXEN0) | (1 << TXEN0);
+    UCSR0C    = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 static char uart_recv() {
