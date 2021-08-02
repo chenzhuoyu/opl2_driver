@@ -1,7 +1,7 @@
 MCU      = atmega328p
 FREQ	 = 20000000
 TARGET   = opl2
-OBJECTS  = main.o opl2.o
+OBJECTS  = main.o opl2.o uart.o
 
 LDFLAGS  = -flto -Wl,--gc-sections -Wl,--print-gc-sections -Wl,-Map,${TARGET}.map
 CPPFLAGS = -std=c++17 -Wall -O3 -Wextra -fdata-sections -ffunction-sections -DF_CPU=${FREQ}

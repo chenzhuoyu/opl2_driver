@@ -1,63 +1,63 @@
-#include <stdio.h>
 #include <avr/io.h>
-#include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "opl2.h"
+#include "uart.h"
 
-#define UART_RX     (1 << PD0)
-#define UART_TX     (1 << PD1)
-#define UART_DDR    DDRD
-#define UART_BAUD   115200
-#define UART_UBRR   (uint16_t)((F_CPU / (16.0 * UART_BAUD)) - 0.5)
+#define ERR_OK      0xe0
+#define ERR_INVAL   0xe1
+#define CMD_RESET   0xc1
+#define CMD_WRITE   0xc2
+#define CMD_SLEEP   0xc3
 
-static void uart_init() {
-    UART_DDR |= UART_TX;
-    UART_DDR &= ~UART_RX;
-    UBRR0     = UART_UBRR;
-    UCSR0B    = (1 << RXEN0) | (1 << TXEN0);
-    UCSR0C    = (1 << UCSZ01) | (1 << UCSZ00);
-}
-
-static char uart_recv() {
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
-}
-
-static void uart_send(char data) {
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = data;
-}
-
-static int stdio_read(FILE *) {
-    return uart_recv();
-}
-
-static int stdio_write(char data, FILE *) {
-    uart_send(data);
-    return 0;
-}
-
-static void stdio_init() {
-    stdin  = fdevopen(NULL, stdio_read);
-    stdout = fdevopen(stdio_write, NULL);
-    stderr = fdevopen(stdio_write, NULL);
+static inline void delay_dyn(uint16_t ms) {
+    while (ms >= 1000) { _delay_ms(1000); ms -= 1000; }
+    while (ms >=  100) { _delay_ms( 100); ms -=  100; }
+    while (ms >=   10) { _delay_ms(  10); ms -=   10; }
+    while (ms >=    1) { _delay_ms(   1); ms -=    1; }
 }
 
 int main() {
     uart_init();
-    stdio_init();
-
-    /* initialize OPL2 */
     opl2_init();
-    printf("* OPL2 Initialized.\r\n");
-
-    /* reset OPL2 */
     opl2_reset();
-    printf("* OPL2 Resetted.\r\n");
 
-    DDRD |= 1 << PD7;
+    /* command loop */
     for (;;) {
-        getchar();
-        PORTD ^= 1 << PD7;
+        switch (uart_recv()) {
+            default: {
+                uart_send(ERR_INVAL);
+                break;
+            }
+
+            /* reset OPL2 */
+            case CMD_RESET: {
+                opl2_reset();
+                uart_send(ERR_OK);
+                break;
+            }
+
+            /* write OPL2 register */
+            case CMD_WRITE: {
+                uint8_t reg = uart_recv();
+                uint8_t val = uart_recv();
+
+                /* write the register value */
+                opl2_write(reg, val);
+                uart_send(ERR_OK);
+                break;
+            }
+
+            /* sleep for some time */
+            case CMD_SLEEP: {
+                uint16_t vl = uart_recv();
+                uint16_t vh = uart_recv();
+
+                /* wait for some time */
+                delay_dyn(vl | (vh << 8));
+                uart_send(ERR_OK);
+                break;
+            }
+        }
     }
 }
