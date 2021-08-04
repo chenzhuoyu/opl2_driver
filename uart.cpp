@@ -8,12 +8,21 @@ void uart_init() {
     UCSR0C    = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
-void uart_send(uint8_t data) {
+char uart_has_data() {
+    return (UCSR0A & (1 << RXC0)) != 0;
+}
+
+uint8_t uart_read_byte() {
+    while (!uart_has_data());
+    return UDR0;
+}
+
+void uart_write_byte(uint8_t data) {
     loop_until_bit_is_set(UCSR0A, UDRE0);
     UDR0 = data;
 }
 
-uint8_t uart_recv() {
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
+void uart_write_word(uint16_t data) {
+    uart_write_byte((uint8_t)data);
+    uart_write_byte((uint8_t)(data >> 8));
 }

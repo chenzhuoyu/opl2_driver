@@ -1,5 +1,5 @@
 MCU      = atmega328p
-FREQ	 = 20000000
+FREQ	 = 16000000
 TARGET   = opl2
 OBJECTS  = main.o opl2.o uart.o
 

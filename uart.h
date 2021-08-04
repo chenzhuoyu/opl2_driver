@@ -7,11 +7,13 @@
 #define UART_RX     (1 << PD0)
 #define UART_TX     (1 << PD1)
 #define UART_DDR    DDRD
-#define UART_BAUD   115200
-#define UART_UBRR   (uint16_t)((F_CPU / (16.0 * UART_BAUD)) - 0.5)
+#define UART_UBRR   0
 
 void    uart_init();
-void    uart_send(uint8_t data);
-uint8_t uart_recv();
+char    uart_has_data();
+uint8_t uart_read_byte();
+
+void uart_write_byte(uint8_t data);
+void uart_write_word(uint16_t data);
 
 #endif
