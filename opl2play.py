@@ -282,7 +282,7 @@ def make_write(cmd: VGMWriteRegister) -> bytes:
 def main():
     sdev  = '/dev/tty.usbserial-2330'
     sbaud = 1000000
-    fname = '/Users/chenzhuoyu/Sources/tests/test_vgm/ultima6.vgm'
+    fname = '/Users/chenzhuoyu/Sources/tests/test_vgm/chinese.vgm'
 
     # read the VGM file
     with open(fname, 'rb') as fp:

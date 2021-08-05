@@ -17,6 +17,7 @@
 #define OPL_WRITE   0xd1
 #define OPL_CLOSE   0xd2
 
+#define T_INIT      6       // 1ms, at F_CPU=16MHz
 #define Q_SIZE      1024
 
 #define decr_nz(v)  if (v) { v--; }
@@ -27,11 +28,12 @@ static uint16_t _widx;
 static uint8_t  _queue[Q_SIZE];
 
 /* increases every millisecond */
-static volatile uint32_t _tick  = 0;
+static volatile uint16_t _tick  = 0;
 static volatile uint16_t _sleep = 0;
 
-ISR(INT0_vect) {
+ISR(TIMER0_OVF_vect) {
     _tick++;
+    TCNT0 = T_INIT;
     decr_nz(_sleep);
 }
 
@@ -91,10 +93,10 @@ static uint8_t q_receive(uint16_t nb) {
     }
 }
 
-static void int0_init() {
-    DDRD  &= ~(1 << PD2);
-    EIMSK |= (1 << INT0);
-    EICRA |= (1 << ISC01);
+static void tick_init() {
+    TCNT0   = T_INIT;
+    TCCR0B |= (1 << CS01) | (1 << CS00);
+    TIMSK0 |= (1 << TOIE0);
 }
 
 static void opl2_close() {
@@ -174,7 +176,7 @@ static void process_commands() {
 
 int main() {
     q_clear();
-    int0_init();
+    tick_init();
     uart_init();
     opl2_init();
     opl2_reset();
